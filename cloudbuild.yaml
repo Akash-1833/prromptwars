@@ -1,0 +1,60 @@
+# Cloud Build configuration for VenuePulse
+# Uses Artifact Registry (not deprecated Container Registry)
+# Deploys to Cloud Run with Secret Manager integration
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/venuepulse/venuepulse:$SHORT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/venuepulse/venuepulse:latest'
+      - '.'
+
+  # Push to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/venuepulse/venuepulse:$SHORT_SHA']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/venuepulse/venuepulse:latest']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'venuepulse'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/venuepulse/venuepulse:$SHORT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '3'
+      - '--timeout'
+      - '300s'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production'
+      - '--update-secrets'
+      - 'GOOGLE_API_KEY=venuepulse-gemini-key:latest,ADMIN_PASSKEY=venuepulse-admin-key:latest'
+
+substitutions:
+  _REGION: asia-south1
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/venuepulse/venuepulse:$SHORT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/venuepulse/venuepulse:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

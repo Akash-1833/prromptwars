@@ -1,0 +1,87 @@
+"use client";
+
+import React, { useState } from "react";
+import { cn } from "@/lib/utils";
+import { HelpCircle } from "lucide-react";
+
+interface StatCardProps {
+    label: string;
+    value: string | number;
+    subValue?: string;
+    icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+    iconLabel?: string;
+    variant?: "teal" | "orange" | "red" | "gray";
+}
+
+/** Tooltip descriptions for each stat label — VenuePulse context. */
+const TOOLTIP_TEXTS: Record<string, string> = {
+    "Attendance": "Total number of attendees currently inside the venue.",
+    "Packed Zones": "Count of zones at or above 90% capacity.",
+    "Busy Zones": "Count of zones between 70-89% capacity.",
+    "Rising": "Number of zones with an increasing crowd trend.",
+    "Avg Wait": "Average wait time across food courts and restrooms.",
+    "Surge Alerts": "Number of active AI-predicted crowd surge warnings.",
+    "Requests": "Total number of HTTP requests processed.",
+    "Unique IP": "Total number of unique source IP addresses observed.",
+    "Blocked": "Number of malicious requests blocked by security rules.",
+};
+
+export function StatCard({ label, value, subValue, icon: Icon, iconLabel, variant = "teal" }: StatCardProps) {
+    const [showTooltip, setShowTooltip] = useState(false);
+
+    return (
+        <div className="sl-card p-3 flex flex-col gap-2 relative transition-all hover:shadow-md h-[112px] bg-white group">
+            <div className="flex items-center justify-between">
+                <div
+                    className="flex items-center gap-1 min-w-0 relative"
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => setShowTooltip(false)}
+                    onFocus={() => setShowTooltip(true)}
+                    onBlur={() => setShowTooltip(false)}
+                    tabIndex={0}
+                    role="group"
+                    aria-describedby={showTooltip ? `tooltip-${label.replace(/\s+/g, '-')}` : undefined}
+                >
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight whitespace-nowrap cursor-help transition-colors group-hover:text-slate-600">{label}</span>
+                    <HelpCircle className="w-3 h-3 text-slate-200 flex-shrink-0 cursor-help" aria-hidden="true" />
+
+                    {/* Tooltip — keyboard accessible via focus */}
+                    {showTooltip && (
+                        <div
+                            id={`tooltip-${label.replace(/\s+/g, '-')}`}
+                            role="tooltip"
+                            className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] font-bold rounded-lg shadow-xl z-[100] animate-in fade-in slide-in-from-bottom-1 border border-slate-700 pointer-events-none"
+                        >
+                            {TOOLTIP_TEXTS[label] || "Description for " + label}
+                            <div className="absolute top-full left-4 border-8 border-transparent border-t-slate-800" aria-hidden="true" />
+                        </div>
+                    )}
+                </div>
+
+                <div className={cn(
+                    "w-6 h-6 rounded-md flex items-center justify-center transition-all group-hover:scale-110",
+                    variant === "orange" ? "bg-orange-50" : variant === "red" ? "bg-red-50" : "bg-teal-50"
+                )}>
+                    {Icon ? (
+                        <Icon className={cn(
+                            "w-3.5 h-3.5",
+                            variant === "orange" ? "text-orange-400" : variant === "red" ? "text-red-400" : "text-teal-400"
+                        )} strokeWidth={3} />
+                    ) : iconLabel ? (
+                        <span className={cn(
+                            "text-[8px] font-black leading-none",
+                            variant === "orange" ? "text-orange-400" : "text-teal-400"
+                        )}>{iconLabel}</span>
+                    ) : null}
+                </div>
+            </div>
+
+            <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black text-slate-900 tracking-tight leading-none">{value}</span>
+                {subValue && (
+                    <span className="text-[11px] font-bold text-slate-400">{subValue}</span>
+                )}
+            </div>
+        </div>
+    );
+}
